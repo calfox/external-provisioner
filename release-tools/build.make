@@ -65,13 +65,13 @@ ARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
 # Specific packages can be excluded from each of the tests below by setting the *_FILTER_CMD variables
 # to something like "| grep -v 'github.com/kubernetes-csi/project/pkg/foobar'". See usage below.
 
-build-%: check-go-version-go
+build-%:
 	mkdir -p bin
-	CGO_ENABLED=0 GOOS=linux go build $(GOFLAGS_VENDOR) -a -ldflags '-X main.version=$(REV) -extldflags "-static"' -o ./bin/$* ./cmd/$*
-	if [ "$$ARCH" = "amd64" ]; then \
-		CGO_ENABLED=0 GOOS=windows go build $(GOFLAGS_VENDOR) -a -ldflags '-X main.version=$(REV) -extldflags "-static"' -o ./bin/$*.exe ./cmd/$* ; \
-		CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build $(GOFLAGS_VENDOR) -a -ldflags '-X main.version=$(REV) -extldflags "-static"' -o ./bin/$*-ppc64le ./cmd/$* ; \
-	fi
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-X main.version=$(REV) -extldflags "-static"' -o ./bin/$*/linux/amd64 ./cmd/$*
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -a -ldflags '-X main.version=$(REV) -extldflags "-static"' -o ./bin/$*/linux/arm64 ./cmd/$*
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -a -ldflags '-X main.version=$(REV) -extldflags "-static"' -o ./bin/$*/linux/arm/v7 ./cmd/$*
+	cp ./bin/$*/linux/arm/v7 ./bin/$*/linux/arm/v6
+	CGO_ENABLED=0 GOOS=windows go build -a -ldflags '-X main.version=$(REV) -extldflags "-static"' -o ./bin/$*.exe ./cmd/$*
 
 container-%: build-%
 	docker build -t $*:latest -f $(shell if [ -e ./cmd/$*/Dockerfile ]; then echo ./cmd/$*/Dockerfile; else echo Dockerfile; fi) --label revision=$(REV) .
